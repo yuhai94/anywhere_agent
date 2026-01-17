@@ -41,9 +41,6 @@ func (s *Scheduler) Start() {
 	s.isRunning = true
 	logger.Info("Starting scheduler...")
 
-	// 启动流量检查协程
-	go s.trafficCheckLoop()
-
 	// 启动实例删除检查协程
 	go s.instanceDeleteLoop()
 }
@@ -59,36 +56,13 @@ func (s *Scheduler) Stop() {
 	s.isRunning = false
 }
 
-// trafficCheckLoop 流量检查循环
-func (s *Scheduler) trafficCheckLoop() {
-	// 初始延迟1分钟，然后按照配置的间隔检查
-	ticker := time.NewTicker(time.Duration(s.config.Checks.TrafficInterval) * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			// 检查流量
-			stats, err := s.stats.CheckTraffic()
-			if err != nil {
-				logger.Error("Failed to check traffic", zap.Error(err))
-				continue
-			}
-
-			logger.Info("Traffic check",
-				logger.Time("last_active", stats.LastActive),
-				logger.Bool("has_traffic", stats.HasTraffic))
-
-		case <-s.stopChan:
-			return
-		}
-	}
-}
-
 // instanceDeleteLoop 实例删除检查循环
 func (s *Scheduler) instanceDeleteLoop() {
-	// 每30分钟检查一次实例是否需要删除
-	ticker := time.NewTicker(30 * time.Minute)
+	// 从配置获取实例删除检查间隔
+	checkInterval := s.config.Checks.TrafficInterval
+	logger.Info("Setting instance delete check interval", zap.Int("minutes", checkInterval))
+
+	ticker := time.NewTicker(time.Duration(checkInterval) * time.Minute)
 	defer ticker.Stop()
 
 	for {

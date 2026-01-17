@@ -152,6 +152,7 @@ log:
 | api.port | int | API 服务监听端口 |
 | checks.traffic_interval | int | 流量检查间隔（秒） |
 | checks.idle_timeout | int | 空闲超时时间（秒） |
+| checks.instance_check_interval | int | 实例删除检查间隔（分钟） |
 | log.level | string | 日志级别（debug, info, warn, error） |
 | log.max_size | int | 单日志文件最大大小（MB） |
 | log.max_backups | int | 保留日志文件数量 |
