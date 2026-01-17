@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,7 +18,6 @@ type APIServer struct {
 	config     *config.Config
 	address    string
 	port       int
-	jwtSecret  string
 	v2rayStats *v2ray.TrafficMonitor
 	deployChan chan *v2ray.DeployStatus
 	server     *http.Server // 保存HTTP服务器实例
@@ -31,7 +29,6 @@ func NewAPIServer(cfg *config.Config, deployChan chan *v2ray.DeployStatus, v2ray
 		config:     cfg,
 		address:    cfg.API.Address,
 		port:       cfg.API.Port,
-		jwtSecret:  cfg.API.JWTSecret,
 		v2rayStats: v2rayStats,
 		deployChan: deployChan,
 	}
@@ -43,11 +40,8 @@ func (s *APIServer) Start() error {
 	gin.SetMode(gin.ReleaseMode) // 生产模式
 	r := gin.Default()
 
-	// API路由组
+	// API路由组 - 移除JWT认证中间件
 	api := r.Group("/api")
-
-	// 应用JWT认证中间件
-	api.Use(s.jwtAuthMiddleware)
 
 	// 简化后的API端点：同时返回状态和配置
 	api.GET("/status", s.handleStatusAndConfig)
@@ -83,38 +77,6 @@ func (s *APIServer) Stop() error {
 	defer cancel()
 
 	return s.server.Shutdown(ctx)
-}
-
-// jwtAuthMiddleware JWT认证中间件
-func (s *APIServer) jwtAuthMiddleware(c *gin.Context) {
-	// 从Authorization头获取JWT令牌
-	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
-		c.Abort()
-		return
-	}
-
-	// 检查Authorization头格式
-	parts := strings.Split(authHeader, " ")
-	if len(parts) != 2 || parts[0] != "Bearer" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
-		c.Abort()
-		return
-	}
-
-	tokenString := parts[1]
-
-	// 验证JWT令牌
-	_, err := ValidateJWT(tokenString, s.jwtSecret)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
-		c.Abort()
-		return
-	}
-
-	// 令牌有效，继续处理请求
-	c.Next()
 }
 
 // handleStatusAndConfig 同时处理状态和配置查询请求

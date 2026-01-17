@@ -24,9 +24,8 @@ type V2RayConfig struct {
 
 // APIConfig API服务相关配置
 type APIConfig struct {
-	Address   string `yaml:"address"`
-	Port      int    `yaml:"port"`
-	JWTSecret string `yaml:"jwt_secret"`
+	Address string `yaml:"address"`
+	Port    int    `yaml:"port"`
 }
 
 // ChecksConfig 检查相关配置
@@ -96,9 +95,6 @@ func validateConfig() error {
 	}
 	if AppConfig.API.Port == 0 {
 		return fmt.Errorf("api.port is required")
-	}
-	if AppConfig.API.JWTSecret == "" {
-		return fmt.Errorf("api.jwt_secret is required")
 	}
 
 	// 验证Checks配置

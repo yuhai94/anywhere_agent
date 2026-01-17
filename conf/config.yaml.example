@@ -15,8 +15,6 @@ api:
   address: "127.0.0.1"
   # API server port (HTTP)
   port: 21994
-  # JWT Secret for API authentication
-  jwt_secret: "your-jwt-secret-here"
 
 # Checks Configuration
 checks:
