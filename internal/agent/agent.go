@@ -59,7 +59,11 @@ func (a *Agent) Start() error {
 	logger.Info("Starting Anywhere Agent...")
 
 	// 1. 部署V2Ray
-	go a.deployV2Ray()
+	a.wg.Add(1)
+	go func() {
+		defer a.wg.Done()
+		a.deployV2Ray()
+	}()
 
 	// 2. 启动API服务器
 	a.wg.Add(1)
@@ -75,9 +79,7 @@ func (a *Agent) Start() error {
 
 	logger.Info("Anywhere Agent started successfully")
 
-	// 等待停止信号
-	a.wg.Wait()
-
+	// 不需要在这里等待，由main函数处理退出
 	return nil
 }
 
@@ -91,6 +93,11 @@ func (a *Agent) Stop() {
 	// 停止调度器
 	a.scheduler.Stop()
 
+	// 停止API服务器
+	if err := a.apiServer.Stop(); err != nil {
+		logger.Error("Failed to stop API server", zap.Error(err))
+	}
+
 	// 等待所有goroutine完成
 	a.wg.Wait()
 
@@ -101,11 +108,29 @@ func (a *Agent) Stop() {
 func (a *Agent) deployV2Ray() {
 	logger.Info("Deploying V2Ray...")
 
+	// 检查是否已收到停止信号
+	select {
+	case <-a.stopChan:
+		logger.Info("V2Ray deployment canceled due to stop signal")
+		return
+	default:
+		// 继续执行
+	}
+
 	// 检查V2Ray是否已安装
 	installed, version, err := v2ray.CheckV2Ray()
 	if err != nil {
 		logger.Error("Failed to check V2Ray", zap.Error(err))
 		return
+	}
+
+	// 检查是否已收到停止信号
+	select {
+	case <-a.stopChan:
+		logger.Info("V2Ray deployment canceled due to stop signal")
+		return
+	default:
+		// 继续执行
 	}
 
 	if installed {
@@ -126,11 +151,11 @@ func (a *Agent) deployV2Ray() {
 		return
 	}
 
-	// 部署V2Ray，传递access log路径
-	status, err := v2ray.DeployV2Ray(a.config.V2Ray.Port, a.config.V2Ray.UUID, a.config.V2Ray.AccessLog)
+	// 部署V2Ray，使用支持取消的版本
+	status, err := v2ray.DeployV2RayWithContext(a.config.V2Ray.Port, a.config.V2Ray.UUID, a.config.V2Ray.AccessLog, a.stopChan)
 	if err != nil {
 		logger.Error("Failed to deploy V2Ray", zap.Error(err))
-		status.Message = err.Error()
+		return
 	}
 
 	// 发送部署状态
@@ -140,5 +165,9 @@ func (a *Agent) deployV2Ray() {
 		// 通道已满，忽略
 	}
 
-	logger.Info("V2Ray deployment completed")
+	if status.Message != "Deployment canceled" {
+		logger.Info("V2Ray deployment completed")
+	} else {
+		logger.Info("V2Ray deployment canceled")
+	}
 }

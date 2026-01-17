@@ -1,9 +1,11 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/yuhai94/anywhere_agent/internal/config"
@@ -20,6 +22,7 @@ type APIServer struct {
 	jwtSecret  string
 	v2rayStats *v2ray.TrafficMonitor
 	deployChan chan *v2ray.DeployStatus
+	server     *http.Server // 保存HTTP服务器实例
 }
 
 // NewAPIServer 创建新的API服务器
@@ -58,7 +61,28 @@ func (s *APIServer) Start() error {
 		zap.String("address", addr),
 		zap.String("protocol", "HTTP"))
 
-	return r.Run(addr)
+	// 创建HTTP服务器实例
+	s.server = &http.Server{
+		Addr:    addr,
+		Handler: r,
+	}
+
+	// 使用ListenAndServe启动服务器
+	return s.server.ListenAndServe()
+}
+
+// Stop 停止API服务器
+func (s *APIServer) Stop() error {
+	if s.server == nil {
+		return nil
+	}
+
+	logger.Info("Stopping API server...")
+	// 优雅关闭服务器，允许10秒超时
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	return s.server.Shutdown(ctx)
 }
 
 // jwtAuthMiddleware JWT认证中间件
