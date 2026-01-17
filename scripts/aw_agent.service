@@ -1,0 +1,14 @@
+[Unit]
+Description=Anywhere Agent Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/aw_agent
+ExecStart=/opt/aw_agent/bin/agent -config=/opt/aw_agent/conf/conf.yaml -log-dir=/var/log/aw_agent
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,37 @@
+# Anywhere Agent Configuration Example
+
+# V2Ray Configuration
+v2ray:
+  # V2Ray listening port
+  port: 10086
+  # V2Ray UUID for clients
+  uuid: 82a12b1c-3d4e-5f6g-7h8i-9j0k1l2m3n4o
+  # V2Ray access log path
+  access_log: /var/log/v2ray/access.log
+
+# API Server Configuration
+api:
+  # API server address (default: 127.0.0.1 for local access only)
+  address: "127.0.0.1"
+  # API server port (HTTP)
+  port: 21994
+  # JWT Secret for API authentication
+  jwt_secret: "your-jwt-secret-here"
+
+# Checks Configuration
+checks:
+  # Traffic check interval in seconds (default: 300 = 5 minutes)
+  traffic_interval: 300
+  # Idle timeout in seconds (default: 1800 = 30 minutes)
+  idle_timeout: 1800
+
+# Log Configuration
+log:
+  # Log level: debug, info, warn, error
+  level: "info"
+  # Maximum log file size in MB
+  max_size: 100
+  # Maximum number of log file backups
+  max_backups: 7
+  # Maximum number of days to retain log files
+  max_age: 7

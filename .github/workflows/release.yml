@@ -1,0 +1,63 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch:
+          - amd64
+          - arm64
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      
+      - name: Make build script executable
+        run: chmod +x build.sh
+      
+      - name: Run build script
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          ./build.sh -v "$VERSION" -a "${{ matrix.arch }}"
+      
+      - name: Package aw_agent directory
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          cd dist
+          tar -czf ../agent-${VERSION}-linux-${{ matrix.arch }}.tar.gz aw_agent
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-release-${{ matrix.arch }}
+          path: agent-*.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-files
+          merge-multiple: true
+      
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-files/agent-*.tar.gz
+          draft: false
+          prerelease: false
