@@ -6,9 +6,13 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/opt/aw_agent
-ExecStart=/opt/aw_agent/bin/agent -config=/opt/aw_agent/conf/conf.yaml -log-dir=/var/log/aw_agent
+ExecStart=/opt/aw_agent/bin/agent --config=/opt/aw_agent/conf/conf.yaml --log-dir=/var/log/aw_agent
+ExecStop=/bin/kill -SIGTERM $MAINPID
 Restart=on-failure
 RestartSec=5s
+KillMode=process
+KillSignal=SIGTERM
+TimeoutStopSec=30s
 
 [Install]
 WantedBy=multi-user.target
