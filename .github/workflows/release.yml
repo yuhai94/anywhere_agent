@@ -35,7 +35,7 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           cd dist
-          tar -czf ../agent-${VERSION}-linux-${{ matrix.arch }}.tar.gz aw_agent
+          tar -czf ../agent-linux-${{ matrix.arch }}.tar.gz aw_agent
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
